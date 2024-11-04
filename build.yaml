@@ -5,7 +5,7 @@ env:
   variables:
     IMAGE_NAME: "my-app-image"               # Name of your Docker image
     IMAGE_TAG: "latest"                      # Tag for the Docker image
-    REPOSITORY_URI: "<aws_account_id>.dkr.ecr.<region>.amazonaws.com/my-app-image"  # Replace with your ECR repository URI
+    REPOSITORY_URI: 355355693719.dkr.ecr.us-east-1.amazonaws.com/docker-repo  # Replace with your ECR repository URI
 
 phases:
   pre_build:
