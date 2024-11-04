@@ -1,38 +1,30 @@
-
 version: 0.2
-
-env:
-  variables:
-    IMAGE_NAME: "my-app-image"               # Name of your Docker image
-    IMAGE_TAG: "latest"                      # Tag for the Docker image
-    REPOSITORY_URI: 355355693719.dkr.ecr.us-east-1.amazonaws.com/docker-repo  # Replace with your ECR repository URI
 
 phases:
   pre_build:
     commands:
-      - echo "Logging in to Amazon ECR..."
+      - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 355355693719.dkr.ecr.us-east-1.amazonaws.com
-      - echo "Retrieving latest code..."
-      - git pull
-      - echo "Setting image tag as ${IMAGE_TAG} for build"
+      - REPOSITORY_URI= 355355693719.dkr.ecr.us-east-1.amazonaws.com/docker-repo
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
 
   build:
     commands:
-      - echo "Building Docker image..."
-      - docker build -t $IMAGE_NAME .
-      - docker tag $IMAGE_NAME:latest $REPOSITORY_URI:$IMAGE_TAG
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
 
   post_build:
     commands:
-      - echo "Pushing Docker image to Amazon ECR..."
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo "Docker image pushed successfully"
+      - echo Writing image definitions file...
+      - printf '[{"name":"nodeapp","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json
 
 artifacts:
-  files:
-    - '**/*'
-  discard-paths: yes
-
-cache:
-  paths:
-    - '/root/.cache/pip/**/*'
+  files: imagedefinitions.json
