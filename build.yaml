@@ -1,25 +1,38 @@
+
 version: 0.2
+
+env:
+  variables:
+    IMAGE_NAME: "my-app-image"               # Name of your Docker image
+    IMAGE_TAG: "latest"                      # Tag for the Docker image
+    REPOSITORY_URI: "<aws_account_id>.dkr.ecr.<region>.amazonaws.com/my-app-image"  # Replace with your ECR repository URI
 
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
+      - echo "Logging in to Amazon ECR..."
       - aws ecr get-login-password  --region us-east-1 | docker login --username AWS --password-stdin 355355693719.dkr.ecr.us-east-1.amazonaws.com
-      - REPOSITORY_URI="your-repository-uri"
-      - IMAGE_TAG=latest  # Optional: Use a dynamic tag if you want unique versions
+      - echo "Retrieving latest code..."
+      - git pull
+      - echo "Setting image tag as ${IMAGE_TAG} for build"
 
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
-  
+      - echo "Building Docker image..."
+      - docker build -t $IMAGE_NAME .
+      - docker tag $IMAGE_NAME:latest $REPOSITORY_URI:$IMAGE_TAG
+
   post_build:
     commands:
-      - echo Build completed on `date`
-      - echo Pushing the Docker image to ECR...
+      - echo "Pushing Docker image to Amazon ECR..."
       - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo "Docker image pushed successfully"
 
 artifacts:
   files:
     - '**/*'
+  discard-paths: yes
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
